@@ -23,7 +23,9 @@
     "start:client": "cd client && npm run preview",
     "start": "npm run docker:up && npm run start:server & npm run start:client",
 
-    "prod": "npm run docker:up && npm run build && concurrently -n SERVER,CLIENT -c red,cyan \"npm run start:server\""
+    "prod": "npm run docker:up && npm run build && concurrently -n SERVER,CLIENT -c red,cyan \"npm run start:server\"",
+
+    "test": "echo \"No tests yet\" && exit 0"
   },
   "author": "",
   "license": "ISC",

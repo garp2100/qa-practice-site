@@ -1,0 +1,53 @@
+version: 2.1
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:20.10  # CircleCI Node.js image
+
+jobs:
+  build-and-deploy:
+    executor: node-executor
+    steps:
+      - checkout
+
+      # Install dependencies and build
+      - run:
+          name: Install dependencies
+          command: cd server && npm ci
+      - run:
+          name: Build server
+          command: cd server && npm run build
+
+      # Authenticate to GCP
+      - run:
+          name: Authenticate to GCP
+          command: |
+            echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
+            gcloud config set project $GOOGLE_PROJECT_ID
+            gcloud config set run/region $GOOGLE_REGION
+
+      # Build and push Docker image
+      - run:
+          name: Build and Push Docker image
+          command: |
+            IMAGE="us-central1-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:${CIRCLE_SHA1}"
+            gcloud builds submit --tag $IMAGE ./server
+
+      # Deploy to Cloud Run
+      - run:
+          name: Deploy to Cloud Run
+          command: |
+            IMAGE="us-central1-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:${CIRCLE_SHA1}"
+            gcloud run deploy qa-practice-api \
+              --image $IMAGE \
+              --region $GOOGLE_REGION \
+              --platform managed \
+              --allow-unauthenticated \
+              --env-vars-file cloudrun.env.yaml
+
+workflows:
+  deploy:
+    jobs:
+      - build-and-deploy
