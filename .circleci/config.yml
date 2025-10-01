@@ -11,18 +11,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install server deps
-          command: |
-            cd server
-            npm ci     # ✅ install deps
+          name: Install root deps
+          command: npm ci
       - run:
-          name: Run tests
-          command: npm test || echo "⚠️ No tests found, skipping..."
-      - run:
-          name: Build server
-          command: |
-            cd server
-            npx tsc -p . && mkdir -p dist && cp src/schema.sql dist/schema.sql
+          name: Build server + client
+          command: npm run build
       - persist_to_workspace:
           root: .
           paths:
@@ -30,35 +23,26 @@ jobs:
 
   docker-build-and-push:
     docker:
-      - image: cimg/base:stable
+      - image: docker:20.10.24-git
     steps:
       - checkout
-      - setup_remote_docker
       - attach_workspace:
           at: .
-      - run:
-          name: Install gcloud
-          command: |
-            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-            curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-            sudo apt-get update -y
-            sudo apt-get install -y google-cloud-sdk
-            gcloud version
+      - setup_remote_docker:
+          version: 20.10.24
       - run:
           name: Authenticate with GCP
           command: |
-            echo "PROJECT=$GOOGLE_PROJECT_ID"
-            echo "REGION=$GCP_REGION"
             echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
             gcloud config set project $GOOGLE_PROJECT_ID
             gcloud config set run/region $GCP_REGION
             gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
       - run:
-          name: Build and Push Docker Image
+          name: Build & Push Docker image (server + client)
           command: |
             IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
-            docker build -t $IMAGE_URI ./server
+            docker build -t $IMAGE_URI -f server/Dockerfile .
             docker push $IMAGE_URI
             echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
 

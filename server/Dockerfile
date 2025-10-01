@@ -20,7 +20,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy only built artifacts + node_modules from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
 
