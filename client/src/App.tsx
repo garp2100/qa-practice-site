@@ -18,7 +18,8 @@ export default function App() {
 
     return (
         <div className="App">
-            <h1 data-automation-id="title">QA Practice Site</h1>
+            <h1 data-automation-id="title">QA Practice Site - </h1>
+                <h3>Please login or register</h3>
             {!me ? (
                 <>
                     <LoginForm onSuccess={loadMe} />
