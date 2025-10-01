@@ -37,6 +37,14 @@ jobs:
       - attach_workspace:
           at: .
       - run:
+          name: Install gcloud
+          command: |
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+            sudo apt-get update -y
+            sudo apt-get install -y google-cloud-sdk
+            gcloud version
+      - run:
           name: Authenticate with GCP
           command: |
             echo "PROJECT=$GOOGLE_PROJECT_ID"
