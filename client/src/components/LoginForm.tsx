@@ -6,6 +6,11 @@ export default function LoginForm({ onSuccess }: { onSuccess:() => void }) {
     const [password, setPassword] = useState('password');
     const [error, setError] = useState('');
 
+    interface LoginResponse {
+        token: string;
+        user?: { id: string; email: string };
+    }
+
     async function submit(e: React.FormEvent) {
         e.preventDefault();
         try {
@@ -15,17 +20,18 @@ export default function LoginForm({ onSuccess }: { onSuccess:() => void }) {
                 body: JSON.stringify({ email, password }),
             });
 
-            console.log("Login response:", response);
-
-            // Handle both string and object responses
-            const token = typeof response === 'string' ? response : response.token;
+            const { token } = response as LoginResponse
 
             if (!token) {
-                throw new Error("No token received from server");
+                console.error("No token received from server:", response);
+                setError("Login failed: Invalid server response");
+                return;
             }
 
-            console.log("Storing token:", token);
-            localStorage.setItem('token', token);
+            if (import.meta.env.MODE === 'development') {
+                console.log("Storing token:", token);
+            }
+            localStorage.setItem('token', token.trim());
 
             // Tell App.tsx to reload user
             onSuccess();
@@ -42,11 +48,15 @@ export default function LoginForm({ onSuccess }: { onSuccess:() => void }) {
               <input data-automation-id ="login-email" value={email} onChange={e=> setEmail(e.target.value)} />
           </label>
           <label>Password
-            <input data-automation-id="login-password" value={password} onChange={e=> setPassword(e.target.value)} />
+            <input
+              data-automation-id="login-password"
+              value={password}
+              onChange={e=> setPassword(e.target.value)}
+              type="password"
+            />
           </label>
           <button data-automation-id ="login-submit" type="submit">Sign in</button>
           {error && <p data-automation-id="login-error">{error}</p>}
       </form>
     );
 }
-

@@ -1,36 +1,38 @@
 import express from 'express';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initDb, query } from './db.js';
 import routes from "./routes.js";
 import fs from 'fs';
+import cors from 'cors';
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
 // --- CORS Setup ---
-if (process.env.NODE_ENV !== 'production') {
-  // Dev: allow any origin (local frontend, Cypress, etc.)
-  app.use(cors({ origin: true, credentials: true }));
-  console.log("🌐 CORS: allowing all origins in dev");
-} else {
-  // Prod: lock down to your deployed frontend
-  const allowedOrigins = ['https://qa-practice-client.web.app'];
-  app.use(cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Not allowed by CORS: ${origin}`));
-      }
-    },
-    credentials: true,
-  }));
-  console.log("🌐 CORS: restricted to", allowedOrigins);
-}
+const defaultOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://qa-practice-client.web.app'
+];
+
+const envOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : [];
+const allowedOrigins = [...defaultOrigins, ...envOrigins];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: "GET,PUT,POST,PATCH,DELETE,OPTIONS",
+  allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+  credentials: true,
+}));
 
 // --- API routes ---
 app.use('/api', routes);
@@ -68,7 +70,8 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   res.status(500).json({ ok: false, error: err.message });
 });
 
-const port = Number(process.env.PORT || 4000);
+const port = Number(process.env.PORT || 4001);
+console.log(`📡 Using port: ${port} (from ${process.env.PORT ? "env" : "default"})`);
 
 (async () => {
   try {
@@ -77,7 +80,16 @@ const port = Number(process.env.PORT || 4000);
   } catch (err) {
     console.error("❌ DB init failed:", err);
   }
-  app.listen(port, () =>
-    console.log(`[Server] listening on http://localhost:${port}`)
-  );
+  const server = app.listen(port, () => {
+    console.log(`[Server] listening on http://localhost:${port}`);
+  });
+
+  server.on("error", (err: any) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`❌ Port ${port} is already in use. Try setting a different PORT in your .env file.`);
+      process.exit(1);
+    } else {
+      throw err;
+    }
+  });
 })();
