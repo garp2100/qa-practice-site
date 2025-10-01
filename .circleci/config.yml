@@ -14,7 +14,7 @@ jobs:
           name: Install server deps
           command: |
             cd server
-            npm ci     # ✅ install deps
+            npm ci
       - run:
           name: Run tests
           command: npm test || echo "⚠️ No tests found, skipping..."
@@ -28,60 +28,46 @@ jobs:
           paths:
             - .
 
-docker-build-and-push:
-  docker:
-    - image: cimg/base:stable   # has git, bash, and works with remote_docker
-  steps:
-    - checkout
-
-    # ensure Docker daemon is available
-    - setup_remote_docker:
-        docker_layer_caching: true
-
-    # sanity: show where we are & what files exist
-    - run:
-        name: Show workspace files
-        command: |
-          pwd
-          ls -la
-          echo "-----"
-          ls -la server || true
-          echo "-----"
-          [ -f Dockerfile ] && echo "✅ Found Dockerfile at repo root" || echo "❌ Dockerfile missing at repo root"
-
-    # auth to GCP Artifact Registry
-    - run:
-        name: Authenticate with GCP (for Artifact Registry)
-        command: |
-          echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
-          curl -sSL https://sdk.cloud.google.com | bash >/dev/null
-          echo 'source "$HOME/google-cloud-sdk/path.bash.inc"' >> $BASH_ENV
-          source "$HOME/google-cloud-sdk/path.bash.inc"
-          gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
-          gcloud config set project "$GOOGLE_PROJECT_ID"
-          gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
-
-    # buildx and push (explicitly point to the Dockerfile at repo root)
-    - run:
-        name: Build & Push multi-arch image (linux/amd64)
-        command: |
-          source "$BASH_ENV"
-          IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
-
-          # ensure buildx is available and a builder exists
-          docker buildx version || true
-          docker buildx create --use --name xbuilder || docker buildx use xbuilder
-          docker buildx inspect --bootstrap
-
-          # IMPORTANT: -f ./Dockerfile and context "."
-          docker buildx build \
-            --platform linux/amd64 \
-            -t "$IMAGE_URI" \
-            -f ./Dockerfile \
-            --push \
-            .
-
-          echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
+  docker-build-and-push:   # ✅ job name must match exactly
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Show workspace files
+          command: |
+            pwd
+            ls -la
+            echo "-----"
+            ls -la server || true
+            echo "-----"
+            [ -f Dockerfile ] && echo "✅ Found Dockerfile at repo root" || echo "❌ Dockerfile missing at repo root"
+      - run:
+          name: Authenticate with GCP (for Artifact Registry)
+          command: |
+            echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
+            curl -sSL https://sdk.cloud.google.com | bash >/dev/null
+            echo 'source "$HOME/google-cloud-sdk/path.bash.inc"' >> $BASH_ENV
+            source "$HOME/google-cloud-sdk/path.bash.inc"
+            gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
+            gcloud config set project "$GOOGLE_PROJECT_ID"
+            gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
+      - run:
+          name: Build & Push multi-arch image (linux/amd64)
+          command: |
+            source "$BASH_ENV"
+            IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
+            docker buildx create --use --name xbuilder || docker buildx use xbuilder
+            docker buildx inspect --bootstrap
+            docker buildx build \
+              --platform linux/amd64 \
+              -t "$IMAGE_URI" \
+              -f ./Dockerfile \
+              --push \
+              .
+            echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
 
   deploy:
     docker:
@@ -112,7 +98,7 @@ workflows:
   build_and_deploy:
     jobs:
       - build
-      - docker-build-and-push:
+      - docker-build-and-push:   # ✅ must match job definition above
           requires:
             - build
       - deploy:
