@@ -4,6 +4,8 @@ WORKDIR /app
 
 # Copy only package.json + lock for caching
 COPY package*.json ./
+COPY server/package*.json ./server/
+COPY client/package*.json ./client/
 
 # Install dependencies
 RUN npm ci
@@ -22,7 +24,7 @@ WORKDIR /app
 # Copy only built artifacts + node_modules from builder
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/client/dist ./client/dist
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/server/node_modules ./server/node_modules
 COPY package*.json ./
 
 # Env vars will be injected by Cloud Run or Docker --env-file
@@ -31,4 +33,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Start the server
-CMD ["node", "dist/index.js"]
+CMD ["node", "server/dist/index.js"]
