@@ -2,13 +2,17 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy only package.json + lock for caching
+# Install root deps (if any)
 COPY package*.json ./
-COPY server/package*.json ./server/
-COPY client/package*.json ./client/
+RUN npm ci
 
-# Install deps for root, server, and client
-RUN npm install --workspaces --include-workspace-root
+# Install server deps
+COPY server/package*.json ./server/
+RUN cd server && npm ci
+
+# Install client deps
+COPY client/package*.json ./client/
+RUN cd client && npm ci
 
 # Copy full source
 COPY . .
