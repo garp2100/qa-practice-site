@@ -453,7 +453,7 @@ Run client:
 ```
 
 Visit <http://localhost:5173>.<br><br>
-Refer to the [README.md](README.md) for all operations you can do on the site.
+
 
 ------------------------------------------------------------------------
 
@@ -531,6 +531,8 @@ export default function Items() {
 Integrated into `App.tsx` (already included).
 
 Features: - Add new items - Toggle done/undone - Delete items
+
+Refer to the [README.md](README.md) for all operations you can do on the site.
 
 ------------------------------------------------------------------------
 

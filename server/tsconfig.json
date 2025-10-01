@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ESNext",
+    "target": "ES2020",
     "lib": ["ESNext", "DOM"],
-    "types": ["vite/client"],
     "jsx": "react-jsx",
     "esModuleInterop": true,
-    "allowImportingTsExtensions": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "src",
     "skipLibCheck": true,
     "outDir": "dist"
   },
-  "include": ["src"]
+  "include": ["src/**/*"]
 }

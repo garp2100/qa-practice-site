@@ -1,0 +1,33 @@
+# --- Stage 1: Build the server ---
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy only package.json + lock for caching
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy full source
+COPY . .
+
+# Run the TypeScript build
+RUN npm run build
+
+
+# --- Stage 2: Run in production ---
+FROM node:20-alpine
+WORKDIR /app
+
+# Copy only built artifacts + node_modules from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY package*.json ./
+
+# Env vars will be injected by Cloud Run or Docker --env-file
+ENV NODE_ENV=production
+ENV PORT=8080
+EXPOSE 8080
+
+# Start the server
+CMD ["node", "dist/index.js"]
