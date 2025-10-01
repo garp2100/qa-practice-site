@@ -33,7 +33,9 @@ jobs:
       - image: cimg/base:stable
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.18
+          docker_layer_caching: true
       - attach_workspace:
           at: .
       - run:
@@ -55,12 +57,16 @@ jobs:
             gcloud config set run/region $GCP_REGION
             gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
       - run:
-            name: Build & Push Docker image (server + client)
-            command: |
-              IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
-              docker build -t $IMAGE_URI -f server/Dockerfile .
-              docker push $IMAGE_URI
-              echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
+          name: Build & Push Docker image (server + client)
+          command: |
+            IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
+            docker version
+            docker buildx version || true
+            docker buildx create --use --name xbuilder || true
+            docker buildx inspect --bootstrap
+            # Build for linux/amd64 and push to Artifact Registry
+            docker buildx build --platform linux/amd64 -t $IMAGE_URI --push .
+            echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
 
   deploy:
     docker:
