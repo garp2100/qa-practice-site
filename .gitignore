@@ -1,2 +1,42 @@
+# ------------------------
+# Node / TypeScript
+# ------------------------
 node_modules/
-*.DS_Store
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ------------------------
+# Environment files (DO NOT COMMIT SECRETS)
+# ------------------------
+.env
+.env.*
+!.env.example
+cloudrun.env.yaml
+!cloudrun.env.yaml.example
+
+# ------------------------
+# OS-specific / IDE files
+# ------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ------------------------
+# Docker
+# ------------------------
+pgdata/
+docker-data/
+*.pid
+*.sock
+
+# ------------------------
+# Client build (if Vite/React)
+# ------------------------
+client/dist/
+client/.vite/
