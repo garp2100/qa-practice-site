@@ -28,13 +28,34 @@ jobs:
           paths:
             - .
 
-  docker-build-and-push:   # ✅ job name must match exactly
+  docker-build-and-push:
     docker:
       - image: cimg/base:stable
     steps:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
+      - run:
+          name: Authenticate with GCP (non-interactive APT install)
+          command: |
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+
+            # Install Google Cloud SDK via APT (non-interactive)
+            sudo apt-get update -y
+            sudo apt-get install -y apt-transport-https ca-certificates gnupg
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+              | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+            curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+              | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+            sudo apt-get update -y
+            sudo apt-get install -y google-cloud-sdk
+
+            # Auth & configure Artifact Registry Docker helper
+            echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
+            gcloud config set project "$GOOGLE_PROJECT_ID"
+            gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
       - run:
           name: Show workspace files
           command: |
@@ -45,28 +66,21 @@ jobs:
             echo "-----"
             [ -f Dockerfile ] && echo "✅ Found Dockerfile at repo root" || echo "❌ Dockerfile missing at repo root"
       - run:
-          name: Authenticate with GCP (for Artifact Registry)
+          name: Build & Push multi-arch image (linux/amd64) from server/
           command: |
-            echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
-            curl -sSL https://sdk.cloud.google.com | bash >/dev/null
-            echo 'source "$HOME/google-cloud-sdk/path.bash.inc"' >> $BASH_ENV
-            source "$HOME/google-cloud-sdk/path.bash.inc"
-            gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
-            gcloud config set project "$GOOGLE_PROJECT_ID"
-            gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
-      - run:
-          name: Build & Push multi-arch image (linux/amd64)
-          command: |
-            source "$BASH_ENV"
             IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
+
+            # Fail fast if Dockerfile is missing
+            [ -f "$PWD/server/Dockerfile" ] || { echo "❌ Dockerfile not found at $PWD/server/Dockerfile"; ls -la server || true; exit 1; }
+
             docker buildx create --use --name xbuilder || docker buildx use xbuilder
             docker buildx inspect --bootstrap
             docker buildx build \
               --platform linux/amd64 \
               -t "$IMAGE_URI" \
-              -f ./Dockerfile \
+              -f "$PWD/server/Dockerfile" \
               --push \
-              .
+              "$PWD/server"
             echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
 
   deploy:
@@ -98,7 +112,7 @@ workflows:
   build_and_deploy:
     jobs:
       - build
-      - docker-build-and-push:   # ✅ must match job definition above
+      - docker-build-and-push:
           requires:
             - build
       - deploy:
