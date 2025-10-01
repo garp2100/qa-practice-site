@@ -3,9 +3,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p . && mkdir -p dist && cp src/schema.sql dist/schema.sql",
-    "start": "NODE_ENV=production node dist/index.js",
-    "db:init": "psql -h localhost -U app -d appdb -f src/schema.sql"
+    "build": "tsc -p . && cp src/schema.sql dist/schema.sql",
+    "start": "NODE_ENV=development node dist/index.js",
+    "start:prod": "NODE_ENV=production node dist/index.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

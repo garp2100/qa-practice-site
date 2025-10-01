@@ -19,9 +19,9 @@
     "build:client": "cd client && npm run build",
     "build": "npm run build:server && npm run build:client",
 
-    "start:server": "cd server && npm start",
-    "start:client": "cd client && npm run preview",
     "start": "npm run docker:up && npm run start:server & npm run start:client",
+    "start:server": "cd server && npm run start",
+    "start:server:prod": "cd server && npm run start:prod",
 
     "prod": "npm run docker:up && npm run build && concurrently -n SERVER,CLIENT -c red,cyan \"npm run start:server\"",
 
