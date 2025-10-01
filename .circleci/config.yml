@@ -55,12 +55,12 @@ jobs:
             gcloud config set run/region $GCP_REGION
             gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
       - run:
-          name: Build and Push Docker Image
-          command: |
-            IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
-            docker build -t $IMAGE_URI ./server
-            docker push $IMAGE_URI
-            echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
+            name: Build & Push Docker image (server + client)
+            command: |
+              IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
+              docker build -t $IMAGE_URI -f server/Dockerfile .
+              docker push $IMAGE_URI
+              echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
 
   deploy:
     docker:
