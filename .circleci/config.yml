@@ -1,70 +1,88 @@
 version: 2.1
 
-orbs:
-  node: circleci/node@5.1.0
-  gcp-cli: circleci/gcp-cli@2.5.0
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:20.11
 
 jobs:
   build:
-    docker:
-      - image: cimg/node:20.10
+    executor: node-executor
     steps:
       - checkout
-      - node/install-packages:
-          pkg-manager: npm
       - run:
           name: Install server deps
           command: |
             cd server
-            npm ci
+            npm run build
       - run:
-          name: Install client deps
-          command: |
-            cd client
-            npm ci
+          name: Run tests
+          command: npm test
       - run:
-          name: Build server
+          name: Build project
           command: |
             cd server
             npm run build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  docker-build-and-push:
+    docker:
+      - image: google/cloud-sdk:slim
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
       - run:
-          name: Build client
+          name: Authenticate with GCP
           command: |
-            cd client
-            npm run build
+            echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
+            gcloud config set project $GOOGLE_PROJECT_ID
+            gcloud config set run/region $GCP_REGION
+            gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
+      - run:
+          name: Build and Push Docker Image
+          command: |
+            IMAGE_URI=${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest
+            docker build -t $IMAGE_URI ./server
+            docker push $IMAGE_URI
+            echo "IMAGE_URI=$IMAGE_URI" >> $BASH_ENV
 
   deploy:
     docker:
       - image: google/cloud-sdk:slim
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - run:
-          name: Authenticate GCP
+          name: Setup gcloud
           command: |
             echo "$GOOGLE_CREDENTIALS" > ${HOME}/gcp-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
             gcloud config set project $GOOGLE_PROJECT_ID
-            gcloud config set run/region $GOOGLE_REGION
-      - run:
-          name: Build & Push Docker image
-          command: |
-            gcloud builds submit \
-              --tag $GOOGLE_REGION-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest ./server
+            gcloud config set run/region $GCP_REGION
       - run:
           name: Deploy to Cloud Run
           command: |
             gcloud run deploy qa-practice-site \
-              --image $GOOGLE_REGION-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest \
-              --region $GOOGLE_REGION \
+              --image ${GCP_REGION}-docker.pkg.dev/$GOOGLE_PROJECT_ID/qa-practice-repo/qa-practice-site:latest \
+              --region $GCP_REGION \
               --platform managed \
               --allow-unauthenticated \
               --add-cloudsql-instances $INSTANCE_CONNECTION_NAME \
-              --env-vars-file server/cloudrun.env.yaml
+              --env-vars-file cloudrun.env.yaml
 
 workflows:
-  build-and-deploy:
+  build_and_deploy:
     jobs:
       - build
-      - deploy:
+      - docker-build-and-push:
           requires:
             - build
+      - deploy:
+          requires:
+            - docker-build-and-push
