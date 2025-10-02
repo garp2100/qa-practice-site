@@ -176,15 +176,22 @@ export default function Items() {
     };
 
     return (
-        <div data-automation-id="items" style={{ padding: '20px' }}>
-            <h2>Items Management</h2>
+        <div data-automation-id="items">
+            <h2 style={{
+                color: 'white',
+                marginBottom: '20px',
+                fontSize: '32px'
+            }}>
+                Items Management
+            </h2>
 
             {/* Add Item Form */}
             <div data-automation-id="add-item-form" style={{
-                background: '#f5f5f5',
-                padding: '20px',
-                borderRadius: '8px',
-                marginBottom: '20px'
+                background: 'white',
+                padding: '24px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
             }}>
                 <h3>Add New Item</h3>
                 <div style={{ display: 'grid', gap: '12px' }}>
@@ -278,10 +285,11 @@ export default function Items() {
 
             {/* Filters and Search */}
             <div data-automation-id="filter-controls" style={{
-                background: '#f5f5f5',
-                padding: '20px',
-                borderRadius: '8px',
-                marginBottom: '20px'
+                background: 'white',
+                padding: '24px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
             }}>
                 <h3>Filters & Search</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
@@ -366,28 +374,43 @@ export default function Items() {
             )}
 
             {/* Items Table */}
-            <div data-automation-id="items-table-container">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <h3>Items ({items.length})</h3>
-                    <span data-automation-id="items-count">{items.length} item(s)</span>
+            <div data-automation-id="items-table-container" style={{
+                background: 'white',
+                padding: '24px',
+                borderRadius: '12px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3 style={{ margin: 0, color: '#333' }}>Items ({items.length})</h3>
+                    <span data-automation-id="items-count" style={{
+                        background: '#e3f2fd',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '14px',
+                        color: '#1976d2',
+                        fontWeight: '600'
+                    }}>
+                        {items.length} item(s)
+                    </span>
                 </div>
 
                 {items.length === 0 && !loading ? (
                     <div data-automation-id="no-items-message" style={{
-                        padding: '40px',
+                        padding: '60px 40px',
                         textAlign: 'center',
                         color: '#999',
-                        background: '#f5f5f5',
-                        borderRadius: '8px'
+                        background: '#f9f9f9',
+                        borderRadius: '12px',
+                        border: '2px dashed #ddd'
                     }}>
-                        No items found. Add one above!
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
+                        <div style={{ fontSize: '18px', fontWeight: '500' }}>No items found</div>
+                        <div style={{ fontSize: '14px', marginTop: '8px' }}>Add your first item using the form above!</div>
                     </div>
                 ) : (
                     <table data-automation-id="items-table" style={{
                         width: '100%',
-                        borderCollapse: 'collapse',
-                        background: 'white',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                        borderCollapse: 'collapse'
                     }}>
                         <thead>
                             <tr style={{ background: '#f5f5f5' }}>
