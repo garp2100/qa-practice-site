@@ -39,4 +39,4 @@ docker-data/
 # Client build (if Vite/React)
 # ------------------------
 client/dist/
-client/.vite/
+client/.vite/key.json

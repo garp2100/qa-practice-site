@@ -4,10 +4,11 @@
   "description": "Fullstack app for practicing Playwright + Cucumber with SQL.",
   "main": "index.js",
   "scripts": {
-    "docker:up": "docker inspect local-postgres >/dev/null 2>&1 || docker run --name local-postgres -e POSTGRES_USER=app -e POSTGRES_PASSWORD=app -e POSTGRES_DB=appdb -p 5432:5432 -v pgdata:/var/lib/postgresql/data -d postgres:16 && docker start local-postgres && (docker inspect local-pgadmin >/dev/null 2>&1 || docker run --name local-pgadmin -e PGADMIN_DEFAULT_EMAIL=admin@example.com -e PGADMIN_DEFAULT_PASSWORD=admin -p 5050:80 --link local-postgres:postgres -d dpage/pgadmin4:8.13) && docker start local-pgadmin",
-    "docker:down": "docker stop local-pgadmin local-postgres qa-practice-site || true && docker rm local-pgadmin local-postgres qa-practice-site || true",
-    "docker:build": "docker build -t qa-practice-site:latest ./server",
-    "docker:run": "npm run docker:up && (docker inspect qa-practice-site >/dev/null 2>&1 || docker run --env-file server/.env.docker -p 8081:8080 --name qa-practice-site qa-practice-site:latest) && docker start qa-practice-site",
+    "docker:up": "(docker inspect local-postgres >/dev/null 2>&1 && docker start local-postgres 2>/dev/null || docker run --name local-postgres -e POSTGRES_USER=app -e POSTGRES_PASSWORD=app -e POSTGRES_DB=appdb -p 5432:5432 -v pgdata:/var/lib/postgresql/data -d postgres:16) && (docker inspect local-pgadmin >/dev/null 2>&1 && docker start local-pgadmin 2>/dev/null || docker run --name local-pgadmin -e PGADMIN_DEFAULT_EMAIL=admin@example.com -e PGADMIN_DEFAULT_PASSWORD=admin -p 5050:80 --link local-postgres:postgres -d dpage/pgadmin4:8.13)",
+    "docker:down": "docker stop local-pgadmin local-postgres qa-practice-site 2>/dev/null || true && docker rm local-pgadmin local-postgres qa-practice-site 2>/dev/null || true",
+    "docker:restart": "docker stop qa-practice-site 2>/dev/null || true && docker rm qa-practice-site 2>/dev/null || true && npm run docker:build && npm run docker:run",
+    "docker:build": "docker build -t qa-practice-site:latest .",
+    "docker:run": "npm run docker:up && (docker inspect qa-practice-site >/dev/null 2>&1 && docker start qa-practice-site || docker run --env-file server/.env.docker -p 8081:8080 --link local-postgres:local-postgres --name qa-practice-site qa-practice-site:latest)",
     "docker:dev": "npm run docker:build && npm run docker:run",
 
     "dev": "npm run docker:up && concurrently -n SERVER,CLIENT -c blue,green \"npm run dev:server\" \"npm run dev:client\"",

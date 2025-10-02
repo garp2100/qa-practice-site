@@ -10,16 +10,16 @@ const __dirname = dirname(__filename);
 
 // Load dotenv only if DATABASE_URL not already set
 if (!process.env.DATABASE_URL) {
-const envFile =
-    process.env.NODE_ENV === "production"
-        ? path.join(__dirname, "../.env.production")
-        : path.join(__dirname, "../.env.local");
+    const envFile =
+        process.env.NODE_ENV === "production"
+            ? path.join(__dirname, "../.env.production")
+            : path.join(__dirname, "../.env.local");
 
     dotenv.config({ path: envFile });
     console.log("DATABASE_URL raw:", process.env.DATABASE_URL);
-    } else {
-        console.log('DATABASE_URL provided by environment:', process.env.DATABASE_URL);
-    }
+} else {
+    console.log('DATABASE_URL provided by environment:', process.env.DATABASE_URL);
+}
 
 // Schema file path (only used locally/dev)
 const schemaPath =
@@ -28,16 +28,16 @@ const schemaPath =
         : path.join(__dirname, "../src/schema.sql"); // in src/ during dev
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL?.trim(),
+    connectionString: process.env.DATABASE_URL?.trim(),
 });
 
 export async function initDb(): Promise<void> {
-  if (fs.existsSync(schemaPath)) {
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-    await pool.query(schema);
-    console.log('✅ Schema applied');
+    if (fs.existsSync(schemaPath)) {
+        const schema = fs.readFileSync(schemaPath, 'utf8');
+        await pool.query(schema);
+        console.log('✅ Schema applied');
     } else {
-      console.warn(`⚠️ Schema file not found at ${schemaPath}, skipping initDb.`);
+        console.warn(`⚠️ Schema file not found at ${schemaPath}, skipping initDb.`);
     }
 }
 
